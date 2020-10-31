@@ -4,6 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"image"
+	"image/color"
+	_ "image/jpeg"
+	"image/png"
+	_ "image/png"
+	"io"
 	"log"
 	"os"
 )
@@ -28,7 +33,7 @@ func main() {
 	}
 
 	/*2枚目*/
-	file2, err := os.Open(flag.Args()[0])
+	file2, err := os.Open(flag.Args()[1])
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,13 +44,31 @@ func main() {
 	}
 	fmt.Printf("%T\n", img1)
 	fmt.Printf("%T\n", img2)
-}
 
-func gray() {
-	/*出力画像作成*/
+	img1Bounds := img1.Bounds()
+	img2_bounds := img2.Bounds()
+
+	/*グレースケール化*/
 	clone, err := os.Create("output/グレースケール.png")
 	if err != nil {
 		log.Fatal(err)
 	}
+	cloneImage, _, err := image.Decode(clone)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	defer clone.Close()
+
+	i := image.NewGray16(img1Bounds)
+	for x := img1Bounds.Min.X; x < img1Bounds.Max.X; x++ {
+		for y := img1Bounds.Min.Y; y < img1Bounds.Max.Y; y++ {
+			gray, _ := color.Gray16Model.Convert(img1.At(x, y)).(color.Gray16)
+			i.Set(x, y, gray)
+		}
+	}
+	_, err = io.Copy(cloneImage, i)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
